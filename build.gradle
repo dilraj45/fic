@@ -1,0 +1,31 @@
+group 'yrf'
+version '1.0'
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceCompatibility = 1.8
+mainClassName = 'com.yrf.dilraj.services.downloader.HttpDownloader'
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    apply plugin: 'idea'
+
+    compile group: 'com.google.inject', name: 'guice', version: '4.0'
+    compile 'org.apache.httpcomponents:httpclient:4.5.2'
+    compile 'org.apache.kafka:kafka-clients:0.10.2.0'
+    compile 'ch.qos.logback:logback-classic:1.2.2'
+    compile 'org.projectlombok:lombok:1.16.20'
+
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.8.5'
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.8.5'
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.8.5'
+
+    compile 'org.jsoup:jsoup:1.10.3'
+
+    compile 'org.slf4j:slf4j-api:1.7.25'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
