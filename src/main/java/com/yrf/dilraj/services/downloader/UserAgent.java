@@ -2,7 +2,10 @@ package com.yrf.dilraj.services.downloader;
 
 import java.io.Serializable;
 
-
+/**
+ * {@link UserAgent} helps in defining the User-Agent for Crawler
+ *
+ */
 public class UserAgent implements Serializable {
 
     public static final String DEFAULT_BROWSER_VERSION = "Mozilla/5.0";

@@ -1,7 +1,6 @@
 package com.yrf.dilraj.services.downloader;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.inject.Inject;
 import com.yrf.dilraj.utils.KafkaUtils;
 import javafx.util.Pair;
 import lombok.Getter;
@@ -20,6 +19,12 @@ import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * {@link HttpDownloader} is wrapper that provide us with functionality of maitaining a thread pool of toe threads
+ * that can be used to download web pages. Additinally, this is the entry point for downloader service
+ *
+ *  @author dilraj45
+ */
 public class HttpDownloader implements Closeable {
 
     private static final int CPU_CORES = Runtime.getRuntime().availableProcessors();
@@ -36,17 +41,14 @@ public class HttpDownloader implements Closeable {
     private final AtomicInteger runningHandlers = new AtomicInteger(0);
     private Fetcher fetcher;
 
-
-    @Inject
     public HttpDownloader(HttpDownloaderConfig config, Fetcher fetcher) {
 
         ThreadFactory downloadThreadFactory =
                 new ThreadFactoryBuilder().setNameFormat("downloader-%d").build();
 
-
         this.downloadQueue = new LinkedBlockingQueue<Runnable>();
         this.fetcher = fetcher;
-        int threadPoolSize = 100;
+        int threadPoolSize = 10;
         this.downloadThreadPool = new ThreadPoolExecutor(threadPoolSize, threadPoolSize, 0L,
                 TimeUnit.MILLISECONDS, this.downloadQueue, downloadThreadFactory) {
             @Override
@@ -66,8 +68,11 @@ public class HttpDownloader implements Closeable {
 
     }
 
+    /**
+     * This method fetches seed URLs from kafka stream and submits them to thread pool of toe thread for downloading
+     */
     public void initDownload() {
-        Properties props = KafkaUtils.KafkaConsumerUtils.getDefaultConsumerConfig();
+        Properties props = KafkaUtils.getDefaultKafkaUtilsConfig();
         KafkaUtils.KafkaConsumerUtils<String, String> consumerUtils = new KafkaUtils.KafkaConsumerUtils<>(props);
         consumerUtils.subscribe(Collections.singletonList("QueuedURLs"));
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
@@ -111,9 +116,8 @@ public class HttpDownloader implements Closeable {
 
     public static void main(String[] args) {
         Fetcher fetcher = new Fetcher();
-        System.out.println(fetcher.getUserAgent().getUserAgentString());
         HttpDownloader downloader = new HttpDownloader(null, new Fetcher());
-        System.out.println("Starting downloading service");
+        LOGGER.info("Starting downloading service");
         downloader.initDownload();
     }
 }

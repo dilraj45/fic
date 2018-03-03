@@ -9,6 +9,14 @@ import java.net.URL;
 
 // todo: provide support for URI, support for link context, support for URL type, support for status
 // todo: implement kafka serializer and desearializer
+
+/**
+ * {@link CrawlURL} facilitates the process of maintaining the metrics required to compute the relevance and other required
+ * attribute specific to a URL so as to perform a priority ordered crawling. Machine learning based paradigms or some heuiristics can be
+ * the basis for computing the relevance of URLs.
+ *
+ * @author dilraj45
+ */
 @Getter
 @Setter
 public class CrawlURL implements Serializable {
