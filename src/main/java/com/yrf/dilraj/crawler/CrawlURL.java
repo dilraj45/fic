@@ -1,8 +1,5 @@
 package com.yrf.dilraj.crawler;
 
-import lombok.Getter;
-import lombok.Setter;
-
 import java.io.Serializable;
 import java.net.URL;
 
@@ -17,8 +14,6 @@ import java.net.URL;
  *
  * @author dilraj45
  */
-@Getter
-@Setter
 public class CrawlURL implements Serializable {
 
     private URL url;
@@ -31,5 +26,9 @@ public class CrawlURL implements Serializable {
     public CrawlURL(URL url, double relevance) {
         this.url = url;
         this.relevance = relevance;
+    }
+
+    public URL getUrl() {
+        return this.url;
     }
 }

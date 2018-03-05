@@ -2,8 +2,10 @@ package com.yrf.dilraj.services.downloader;
 
 import com.yrf.dilraj.crawler.CrawlURL;
 import com.yrf.dilraj.utils.KafkaUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -55,14 +57,15 @@ public class CrawlJob implements Runnable {
         try {
             HttpResponse response = this.fetcher.get(url);
 
-            Document doc = Jsoup.parse(response.getEntity().getContent(),
-                    null, url.toString());
+            Document doc = Jsoup.parse(response.getEntity().getContent(), "UTF-8", url.toString());
             LOGGER.info("Starting job");
-            Elements links = doc.select("a");
+            @Nullable Elements links = doc.select("a");
             List<CrawlURL> extractedLinks = new LinkedList<>();
             for(Element link : links) {
-                URL url = new URL (link.attr("abs:href"));
-                extractedLinks.add(new CrawlURL(url));
+                if (!StringUtils.isEmpty(link.attr("abs:href"))) {
+                    URL url = new URL(link.attr("abs:href"));
+                    extractedLinks.add(new CrawlURL(url));
+                }
             }
 
             // todo: currently adding all the url to queued URls, inital checks can be added
@@ -75,9 +78,10 @@ public class CrawlJob implements Runnable {
                 producer.sendMessage("QueuedURLs", crawlUrl.getUrl().getHost(), crawlUrl.getUrl().toString());
             }
 
-            System.out.println(response.getEntity());
+            LOGGER.info("Response: " + response.getEntity());
         } catch (IOException exception) {
             exception.printStackTrace();
+            LOGGER.error("IOException occured: Message for exception: {}", exception);
         }
     }
 }

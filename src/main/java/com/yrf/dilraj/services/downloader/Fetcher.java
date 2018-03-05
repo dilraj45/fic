@@ -5,8 +5,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.apache.http.*;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -30,7 +28,7 @@ public class Fetcher {
     private static final String USER_AGENT = "User-Agent";
 
     private HttpClient client;
-    @Getter @Setter private UserAgent userAgent;
+    private UserAgent userAgent;
     private int connectTimeoutTime;
     private int readTimeoutTime;
 
@@ -91,4 +89,11 @@ public class Fetcher {
         return this.client;
     }
 
+    public void setUserAgent(UserAgent userAgent) {
+        this.userAgent = userAgent;
+    }
+
+    public UserAgent getUserAgent(UserAgent userAgent) {
+        return this.userAgent;
+    }
 }

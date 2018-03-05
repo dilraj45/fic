@@ -1,5 +1,10 @@
 package com.yrf.dilraj.services.downloader;
 
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.io.Serializable;
 
 /**
@@ -10,12 +15,12 @@ public class UserAgent implements Serializable {
 
     public static final String DEFAULT_BROWSER_VERSION = "Mozilla/5.0";
 
-    private final String _agentName;
+    @Nullable private final String _agentName;
     private final String _userAgentString;
 
-    private UserAgent(Builder builder) {
-        this._agentName = builder._agentName;
-        this._userAgentString = builder._userAgentString;
+    private UserAgent(@Nullable String _agentName, @NonNull String _userAgentString) {
+        this._agentName = _agentName;
+        this._userAgentString = _userAgentString;
     }
 
     /**
@@ -23,7 +28,7 @@ public class UserAgent implements Serializable {
      *
      * @return User Agent name (String)
      */
-    public String getAgentName() {
+    public @Nullable String getAgentName() {
         return _agentName;
     }
 
@@ -41,11 +46,11 @@ public class UserAgent implements Serializable {
      */
     public static class Builder {
 
-        private String _agentName;
-        private String _emailAddress;
-        private String _webAddress;
+        @Nullable private String _agentName;
+        @Nullable private String _emailAddress;
+        @Nullable private String _webAddress;
         private String _browserVersion = DEFAULT_BROWSER_VERSION;
-        private String _userAgentString;
+        @MonotonicNonNull private String _userAgentString;
 
         public Builder() {
         }
@@ -80,13 +85,15 @@ public class UserAgent implements Serializable {
          *
          * @return User Agent String
          */
-        private String createUserAgentString() {
+        @EnsuresNonNull("_userAgentString")
+        private void setUserAgentString() {
             // Mozilla/5.0 (compatible; mycrawler/1.0; +http://www.mydomain.com;
             // mycrawler@mydomain.com)
             StringBuilder sb = new StringBuilder();
             sb.append(_browserVersion);
             sb.append(" (compatible; ");
-            sb.append(_agentName);
+            if (_agentName != null && _agentName.isEmpty())
+                sb.append(_agentName);
             sb.append("/");
             if (_webAddress != null && !_webAddress.isEmpty()) {
                 sb.append("; +");
@@ -100,14 +107,14 @@ public class UserAgent implements Serializable {
                 sb.append(_emailAddress);
             }
             sb.append(")");
-            return sb.toString();
+            this._userAgentString = sb.toString();
         }
 
         public UserAgent build() {
             if (_userAgentString == null) {
-                _userAgentString = createUserAgentString();
+                setUserAgentString();
             }
-            return new UserAgent(this);
+            return new UserAgent(_agentName, _userAgentString);
         }
 
     }

@@ -3,10 +3,10 @@ package com.yrf.dilraj.services.downloader;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.yrf.dilraj.utils.KafkaUtils;
 import javafx.util.Pair;
-import lombok.Getter;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,12 +16,17 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 
 /**
  * {@link HttpDownloader} is wrapper that provide us with functionality of maitaining a thread pool of toe threads
- * that can be used to download web pages. Additinally, this is the entry point for downloader service
+ * that can be used to download web pages. Additionally, this is the entry point for downloader service
  *
  *  @author dilraj45
  */
@@ -33,36 +38,32 @@ public class HttpDownloader implements Closeable {
 
     private final ExecutorService downloadThreadPool;
     private final LinkedBlockingQueue<Runnable> downloadQueue;
-    @Getter
-    private final AtomicInteger numberOfDownloads = new AtomicInteger(0);
-    @Getter
-    private final AtomicInteger queuedRequests = new AtomicInteger(0);
-    @Getter
-    private final AtomicInteger runningHandlers = new AtomicInteger(0);
-    private Fetcher fetcher;
+    private static final AtomicInteger numberOfDownloads = new AtomicInteger(0);
+    private static final AtomicInteger queuedRequests = new AtomicInteger(0);
+    private static final AtomicInteger runningHandlers = new AtomicInteger(0);
 
-    public HttpDownloader(HttpDownloaderConfig config, Fetcher fetcher) {
+
+    public HttpDownloader(@Nullable HttpDownloaderConfig config) {
 
         ThreadFactory downloadThreadFactory =
                 new ThreadFactoryBuilder().setNameFormat("downloader-%d").build();
 
-        this.downloadQueue = new LinkedBlockingQueue<Runnable>();
-        this.fetcher = fetcher;
-        int threadPoolSize = 10;
+        this.downloadQueue = new LinkedBlockingQueue<>();
+        int threadPoolSize = 100;
         this.downloadThreadPool = new ThreadPoolExecutor(threadPoolSize, threadPoolSize, 0L,
                 TimeUnit.MILLISECONDS, this.downloadQueue, downloadThreadFactory) {
             @Override
             protected void beforeExecute(Thread t, Runnable r) {
                 super.beforeExecute(t, r);
-                queuedRequests.decrementAndGet();
-                runningHandlers.incrementAndGet();
+                HttpDownloader.queuedRequests.decrementAndGet();
+                HttpDownloader.runningHandlers.incrementAndGet();
             }
 
             @Override
             protected void afterExecute(Runnable r, Throwable t) {
                 super.afterExecute(r, t);
-                runningHandlers.decrementAndGet();
-                numberOfDownloads.incrementAndGet();
+                HttpDownloader.runningHandlers.decrementAndGet();
+                HttpDownloader.numberOfDownloads.incrementAndGet();
             }
         };
 
@@ -115,8 +116,7 @@ public class HttpDownloader implements Closeable {
     }
 
     public static void main(String[] args) {
-        Fetcher fetcher = new Fetcher();
-        HttpDownloader downloader = new HttpDownloader(null, new Fetcher());
+        HttpDownloader downloader = new HttpDownloader(null);
         LOGGER.info("Starting downloading service");
         downloader.initDownload();
     }

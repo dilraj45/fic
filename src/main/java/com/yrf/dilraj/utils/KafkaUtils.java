@@ -1,8 +1,6 @@
 package com.yrf.dilraj.utils;
 
 import javafx.util.Pair;
-import lombok.Getter;
-import lombok.Setter;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -11,6 +9,9 @@ import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Future;
-
 /**
  * Utility class for Apache Kafka
  *
@@ -31,13 +31,14 @@ import java.util.concurrent.Future;
  */
 public class KafkaUtils {
 
-    private static Properties kafkaUtilsConfig;
+    @MonotonicNonNull private static Properties kafkaUtilsConfig;
 
     /**
      * A static method that can be invoked to obtain default configurations for {@link KafkaUtils}
      *
      * @return {@link Properties} for {@link KafkaUtils}
      */
+    @EnsuresNonNull("kafkaUtilsConfig")
     public static Properties getDefaultKafkaUtilsConfig() {
         if (KafkaUtils.kafkaUtilsConfig != null) {
             return KafkaUtils.kafkaUtilsConfig;
@@ -46,6 +47,7 @@ public class KafkaUtils {
         try (FileInputStream configFile = new FileInputStream(
                 "src/main/java/com/yrf/dilraj/config/kafkaUtilsConfig.properties")) {
             props.load(configFile);
+            kafkaUtilsConfig = props;
             return props;
         } catch (FileNotFoundException exception) {
             exception.printStackTrace();
@@ -65,7 +67,15 @@ public class KafkaUtils {
      */
     public static class KafkaProducerUtils<K, V>  implements Closeable {
 
-        @Getter @Setter private KafkaProducer<K,V> producerClient;
+        private KafkaProducer<K,V> producerClient;
+
+        public void setProducerClient(KafkaProducer<K, V> producerClient) {
+            this.producerClient = producerClient;
+        }
+
+        public KafkaProducer<K, V> getProducerClient() {
+            return this.producerClient;
+        }
 
         public static Logger LOGGER = LoggerFactory.getLogger(KafkaProducerUtils.class);
 
@@ -104,12 +114,21 @@ public class KafkaUtils {
          */
         public Future<RecordMetadata> sendMessage(final String TOPIC, K key, V message) {
             ProducerRecord<K, V> record = new ProducerRecord<>(TOPIC, key, message);
-            return this.producerClient.send(record, (RecordMetadata metadata, Exception exception) ->
-                    LOGGER.info("sent record(key=%s value=%s) " +
-                                    "meta(partition=%d, offset=%d)\n",
-                            record.key(), record.value(), metadata.partition(),
-                            metadata.offset())
-                );
+            return this.producerClient.send(record, (RecordMetadata metadata, Exception exception) -> {
+                @Nullable K recordKey = record.key();
+                @Nullable V recordValue = record.value();
+
+                if (recordKey != null && recordValue != null) {
+                    LOGGER.info("sent record(key={} value={}) meta(partition={}, offset={})\n",
+                            recordKey, recordValue, metadata.partition(), metadata.offset());
+                } else if (recordValue != null) {
+                    LOGGER.info("sent record(key=null value={}) meta(partition={}, offset={})\n",
+                            recordValue, metadata.partition(), metadata.offset());
+                } else if (recordKey != null) {
+                    LOGGER.info("sent record(key={} value=null) meta(partition={}, offset={})\n",
+                            recordKey, metadata.partition(), metadata.offset());
+                }
+            });
         }
 
         /**
@@ -146,7 +165,11 @@ public class KafkaUtils {
      */
     public static class KafkaConsumerUtils<K, V> implements Closeable {
 
-        @Getter private Consumer<K, V> consumerClient;
+        private Consumer<K, V> consumerClient;
+
+        public Consumer<K, V> getConsumerClient() {
+            return this.consumerClient;
+        }
 
         public static Logger LOGGER = LoggerFactory.getLogger(KafkaConsumerUtils.class);
 
