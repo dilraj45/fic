@@ -1,0 +1,17 @@
+version: '3'
+services:
+
+  zookeeper:
+    image: zookeeper
+
+  kafka-server:
+    build: kafka-server/
+    ports:
+      - "9092:9092"
+    depends_on:
+      - "zookeeper"
+
+  downloader-service0:
+    build: .
+    depends_on:
+      - "kafka-server"
